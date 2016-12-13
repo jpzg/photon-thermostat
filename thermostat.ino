@@ -1,41 +1,76 @@
+// This #include statement was automatically added by the Particle IDE.
 #include "SparkFunRHT03/SparkFunRHT03.h"
 
-const int RHT03_data = 6;
+const int RHT03_data = D2;
 
 RHT03 rht;
 
-int heat = D5;
-int cool = D6;
-int fan  = D7;
-bool needCooling;
+const int heat = D6;
+const int cool = D1;
+const int fan  = D5;
+bool active = false;
+bool needCooling; // Not used yet.
 bool needHeating;
 
-TCPClient client;
+bool publish_data(String name, String data){ // Make fricking sure the events get published
+    while(!Particle.publish(name,data)){
+        delay(1000);
+    }
+    return true;
+}
+bool publish_status(String name){
+    while(!Particle.publish(name)){
+        delay(1000);
+    }
+}
 
 void setup(void) {
-    Serial.begin(9600);
     rht.begin(RHT03_data);
     pinMode(heat, OUTPUT);
     pinMode(cool, OUTPUT);
     pinMode(fan, OUTPUT);
+    pinMode(D7, OUTPUT);
+    while(!Particle.connected()){ delay(1000); }
 }
 
 void loop(void) {
-    int ret = rht.update();
-    if(ret == 1){
-        float tmp = rht.tempF();
-        float hum = rht.humidity();
-        Serial.println(String(tmp,1) + "F\t" + String(hum,1) + "%");
+    for(int ret = rht.update();ret != 1; ret = rht.update()){ delay(RHT_READ_INTERVAL_MS); } // Wait till it has the readings.
+    
+    float tmp = rht.tempF();
+    float hum = rht.humidity();
+    if(tmp < 68.0){
+        digitalWrite(heat,HIGH);
+        digitalWrite(fan,HIGH);
+        digitalWrite(D7,HIGH);
+        active = true;
+        publish_status("heat-on");
     }
     else{
-        delay(RHT_READ_INTERVAL_MS);
+        publish_data("temperature",String(tmp));
+        publish_data("humidity",String(hum));
     }
-  delay(1000); //just here to slow down the output so it is easier to read
-  digitalWrite(fan, HIGH);
-  delay(1000);
-  digitalWrite(fan,LOW);
-  //System.sleep(10); Lowers power consuption from 75mA to 30mA, but also turns off wifi. Not low enough for long-term battery power, either.
-  //May want to set something up that leaves wifi off most of the time, since right now this thing is running on a huge battery pack.
+    while(tmp < 68.0){ // All this shit needs to be cleaned.
+        int ret = rht.update();
+        if(ret == 1){
+            float tmp = rht.tempF();
+            float hum = rht.humidity();
+            publish_data("temperature",String(tmp));
+            publish_data("humidity",String(hum));
+        }
+        else{
+            delay(RHT_READ_INTERVAL_MS);
+        }
+        delay(10*1000); // Slow it down. 10s between readings.
+    }
+    if(active){
+        digitalWrite(heat,LOW);
+        digitalWrite(fan,LOW);
+        digitalWrite(D7,LOW);
+        active = false;
+        publish_status("heat-off");
+    }
+    System.sleep(SLEEP_MODE_DEEP,10*60); // Deep sleep for 10min, then reset. Consumes a few uA in this mode. The publishes aren't working, so I'm disabling this for the moment.
+    //delay(10*1000);
 }
 
 //void receiveWeather // May implement later.
