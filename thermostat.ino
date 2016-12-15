@@ -38,7 +38,7 @@ void loop(void) {
     
     float tmp = rht.tempF();
     float hum = rht.humidity();
-    if(tmp < 68.0){
+    if(tmp < 66.0){
         digitalWrite(heat,HIGH);
         digitalWrite(fan,HIGH);
         digitalWrite(D7,HIGH);
@@ -49,11 +49,12 @@ void loop(void) {
         publish_data("temperature",String(tmp));
         publish_data("humidity",String(hum));
     }
-    while(tmp < 68.0){ // All this shit needs to be cleaned.
+    // Could probably move everything above this to setup(), and remove the while loop
+    while(tmp < 66.0){ // All this shit needs to be cleaned. Also, it doesn't seem to stop at 68, so I'm lowering it to 62. May need to add more temperature sensors.
         int ret = rht.update();
         if(ret == 1){
-            float tmp = rht.tempF();
-            float hum = rht.humidity();
+            tmp = rht.tempF();
+            hum = rht.humidity();
             publish_data("temperature",String(tmp));
             publish_data("humidity",String(hum));
         }
@@ -69,7 +70,8 @@ void loop(void) {
         active = false;
         publish_status("heat-off");
     }
-    System.sleep(SLEEP_MODE_DEEP,10*60); // Deep sleep for 10min, then reset. Consumes a few uA in this mode. The publishes aren't working, so I'm disabling this for the moment.
+    delay(10*1000); // Sleep for ten seconds. Maybe this will help it publish like it's supposed to?
+    System.sleep(SLEEP_MODE_DEEP,5*60); // Deep sleep for 5min, then reset. Consumes a few uA in this mode. The publishes aren't working, so I'm disabling this for the moment.
     //delay(10*1000);
 }
 
