@@ -12,8 +12,8 @@ RHT03 rht;
 float tmp;
 float hum;
 
-float day_limits[2] = {65.0,69.0}; // Lower limit beyond which the heat turns on and upper limit beyond which it turns off.
-float night_limits[2] = {60.0,65.0};
+float day_limits[2] = {67.0,69.0}; // Lower limit beyond which the heat turns on and upper limit beyond which it turns off.
+float night_limits[2] = {63.0,66.0};
 float * limits; // Turns out this pointer stuff might be necessary, and I <3 pointers. 
 
 bool active = false;
@@ -44,9 +44,10 @@ void setup(void) {
 }
 
 void loop(void) {
-    if(Time.hour() >= 6 & Time.hour() < 23){ // Use day limits only between 6AM and 11PM
+    int h = Time.hour() - 5; // .hour() gives UTC, -5 converts to EST
+    if(((h > 5) & (h < 11)) or (h > 17)){ // Use day limits only between 6AM-10AM and 5PM-12AM. Approximately.
         limits = day_limits;
-        RGB.color(255,128,0); // Orange during the day
+        RGB.color(128,128,0); // Orange during the day
     } else {
         limits = night_limits; // Arrays are just pointers to the first element, so this is valid.
         RGB.color(255,0,0); // Red at night
