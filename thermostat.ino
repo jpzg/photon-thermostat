@@ -44,7 +44,7 @@ void setup(void) {
 }
 
 void loop(void) {
-    int h = (Time.hour() - 19) % 24; // .hour() gives UTC, -5+24 mod 24 gives EST (mod is needed for times like 0, where just -5 would give -5, which doesn't work.)
+    int h = (Time.hour() + 19) % 24; // .hour() gives UTC, -5+24 mod 24 gives EST (mod is needed for times like 0, where just -5 would give -5, which doesn't work.)
     if(((h > 5) & (h < 11)) or (h > 17)){ // Use day limits only between 6AM-10AM and 5PM-12AM. Approximately.
         limits = day_limits;
         RGB.color(128,128,0); // Orange during the day
